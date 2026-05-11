@@ -1,0 +1,59 @@
+# ===== Unity =====
+
+# Unity 本地缓存，打开项目时自动生成，体积巨大
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+
+# Unity 用户个人偏好（窗口布局、断点等），不应同步
+/[Uu]serSettings/
+
+# Asset Store 下载缓存
+/[Aa]ssets/AssetStoreTools*
+
+# ===== IDE / 编辑器 =====
+
+# Visual Studio / Rider 自动生成的解决方案和项目文件
+*.sln
+*.csproj
+*.unityproj
+*.pidb
+*.pdb
+*.mdb
+
+# VS / Rider 缓存目录
+.vs/
+.idea/
+.vscode/
+
+# ===== 系统文件 =====
+
+# macOS
+.DS_Store
+.DS_Store?
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# ===== 构建产物 =====
+
+# 导出的可执行文件 / 安装包
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics
+crashlytics-build.properties
+sysinfo.txt
+
+# ===== 大文件 / 敏感文件 =====
+
+# Plastic SCM
+*.private.0
+*.private
+/[Aa]ssets/Plugins/PlasticSCM*
