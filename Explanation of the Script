@@ -1,0 +1,54 @@
+
+# 头部扫描线的处理
+通过smoothstep函数 来规范前后两个头部扫描线段
+最终通过乘法来使得只有两段线条中间夹着的那一部分有颜色
+原理是前面的扫描线 他是一个由白色包裹的黑色的圆 （通过smoothstep函数，以扫描线为隔，距离比扫描线远的就放在1的那端 距离比扫描线近的就放在0的那一端） 
+后面的扫描线是一个由黑色包裹的白色的圆   （通过smoothstep函数，以扫描线为隔，距离比扫描线远的就放在0的那端 距离比扫描线近的就放在1的那一端）
+后面的扫描线的黑圆面积会小于 前面的扫描线的白圆面积
+所以二者相乘 因为后面扫描线的的黑圆面积小于前面扫描线你的白圆面积 所以整体白色的圆只有中间会被后方黑色的圆相乘污染变成黑色
+这样就拿到了一个两条线夹出来的一个环形 同时为了保证中间黑色的足够黑 我们把后面的扫描线进行power处理 确保内部是极少数特效的 
+
+
+
+
+URP shader脚本编写顺序
+先使用 RenderPassEvent来进行渲染队列的确认
+
+确定值的时候
+使用public 小驼峰命名正常声明需要的值
+使用int 大驼峰声明在外部调控的变量 然后使用Shader.PropertyID使用刚刚小驼峰的变量名称绑定值   如果遇到只需要赋予一次值不会改变的值并且是c#环境可以使用readonly static 来进行声明
+
+
+
+
+ ZTest Always   深度测试永远通过，不需要进行遮挡判断
+ Cull Off  剔除关闭  不需要进行剔除
+ ZWrite Off  深度写入关闭   
+ Blend SrcAlpha OneMinusSrcAlpha    透明混合模式   意思是：最终颜色 = 当前像素颜色 × 自身Alpha + 屏幕原有颜色 × (1 - Alpha)
+ _Screensize   URP内置变量 可以用来获取屏幕上的顶点在屏幕上的XY坐标
+  _ProjectionParams URP内置变量
+
+
+
+
+
+# ScanFeature
+
+这个脚本用来进行扫描效果参数配置以及URP渲染管线的挂载
+
+RenderPassEvent 
+这个可以使用枚举来调节你这个Pass的渲染队列
+文档
+https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@14.0/api/UnityEngine.Rendering.Universal.RenderPassEvent.html
+ 
+
+
+
+
+
+
+
+
+
+
+

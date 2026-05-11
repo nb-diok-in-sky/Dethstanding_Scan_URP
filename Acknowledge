@@ -1,0 +1,32 @@
+获取深度图，使用power
+
+NDC反透视除法： 将屏幕UV转换回世界坐标的算法 就是对矩阵变换和常数运算做一个逆用
+
+正常顶点变换管线 模型坐标 → M → 世界坐标 → V → 视图坐标 → P → 裁剪空间 → ÷w → NDC（归一化） → ×0.5+0.5 → 屏幕 UV
+
+NDC转换管线 屏幕 UV → NDC → 反投影 → 视图坐标 → 世界坐标
+
+float3 GetPixelWorldPositon(float2 uv, float depth01){//要求传入深度和uv //使用一个NDC反透视除法
+float3 farPosCS = float3(uv.x * 2 -1,uv.y * 2 - 1,1) * _ProjectionParams.z; 因为UV范围是0-1 所以这里需要把他转换回-1-1的归一化坐标系里面 注意这里乘以的远裁剪平面的距离
+float3 farPosVs = mul(unity_CameraInvProjection,farPosCS.xyzz).xyz;//反投影空间除法 用z把w分量填充，矩阵乘法需要用四维变量 反正都是1 用了就行 float3 PosVS = farPosVS * depth01; //变回裁剪空间坐标 上一步得到的是远平面的点 这里拿去乘以depth 就很灵性 因为乘以的都是1或者0-1的值，所以他会把远平面上的点拉近，拉向近平面 因为每个点本身深度的不同，所以他们的最终的获得的z位置也是不一样的，回到了他们的实际的深度 而不是守在同一个平面上 这很妙 float3 posWS = TransformViewToWorld(posVS); //把裁剪空间坐标变成屏幕坐标 return posWS; }
+
+Sobel描边
+核心思想是 一个像素和它旁边的像素深度差异很大 说明这里会有一条轮廓边缘 而差异值就是关键 这个算法只需要深度 通过 half calculaateVerticalOutline(float2 uvs[9]){ half color = 0 ; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[0]).x, _ZBufferParams) * -1; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[1]).x, _ZBufferParams) * -2; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[2]).x, _ZBufferParams) * -1; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[6]).x, _ZBufferParams) * 1; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[7]).x, _ZBufferParams) * 2; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[8]).x, _ZBufferParams) * 1;
+
+return color; //这个是截取的一个横着的节点 //-1 -2 -1 //0 0 0 //1 2 1 } half caculateHorizontalOutline(float2 uvs[9]){ half color = 0 ; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[0]).x, _ZBufferParams) * -1; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[3]).x, _ZBufferParams) * -2; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[6]).x, _ZBufferParams) * -1; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[2]).x, _ZBufferParams) * 1; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[5]).x, _ZBufferParams) * 2; color += Linear01Depth(SAMPLE_TEXTURE2D(_BlitTexture, sampler_PointClamp, uvs[8]).x, _ZBufferParams) * 1;
+
+//这里截取的是竖着的节点 //-1 0 1 //-2 0 2 //-1 0 1
+
+//-1 -2 -1 和 1 2 1 是前人验证出来的比较好用的一组数据 并不是什么特别的 换成别的组合也可以算 但是可能会效果不好，出现一些噪点 return color; }
+
+通过获取_BlitTexture贴图里面的深度 来获取某个点与周围点的深度的差异值 超过某个阈值的时候就会判定为中间有一条边缘线
+
+头部扫描线的处理
+通过smoothstep函数 来规范前后两个头部扫描线段 最终通过乘法来使得只有两段线条中间夹着的那一部分有颜色 原理是前面的扫描线 他是一个由白色包裹的黑色的圆 （通过smoothstep函数，以扫描线为隔，距离比扫描线远的就放在1的那端 距离比扫描线近的就放在0的那一端） 后面的扫描线是一个由黑色包裹的白色的圆 （通过smoothstep函数，以扫描线为隔，距离比扫描线远的就放在0的那端 距离比扫描线近的就放在1的那一端） 后面的扫描线的黑圆面积会小于 前面的扫描线的白圆面积 所以二者相乘 因为后面扫描线的的黑圆面积小于前面扫描线你的白圆面积 所以整体白色的圆只有中间会被后方黑色的圆相乘污染变成黑色 这样就拿到了一个两条线夹出来的一个环形 同时为了保证中间黑色的足够黑 我们把后面的扫描线进行power处理 确保内部是极少数特效的
+
+URP shader脚本编写顺序 先使用 RenderPassEvent来进行渲染队列的确认
+
+确定值的时候 使用public 小驼峰命名正常声明需要的值 使用int 大驼峰声明在外部调控的变量 然后使用Shader.PropertyID使用刚刚小驼峰的变量名称绑定值 如果遇到只需要赋予一次值不会改变的值并且是c#环境可以使用readonly static 来进行声明
+
+ZTest Always 深度测试永远通过，不需要进行遮挡判断 Cull Off 剔除关闭 不需要进行剔除 ZWrite Off 深度写入关闭
+Blend SrcAlpha OneMinusSrcAlpha 透明混合模式 意思是：最终颜色 = 当前像素颜色 × 自身Alpha + 屏幕原有颜色 × (1 - Alpha) _Screensize URP内置变量 可以用来获取屏幕上的顶点在屏幕上的XY坐标 _ProjectionParams URP内置变量
