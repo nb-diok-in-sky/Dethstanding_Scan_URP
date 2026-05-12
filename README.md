@@ -21,9 +21,9 @@ https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 
 
 首先是案例分析
-<img width="600" height="337" alt="DepthStanding_Scan1" src="https://github.com/user-attachments/assets/ce1dc586-1733-4e9b-80b0-3cb67ce849c6" />
+<img width="600" height="337" alt="DepthStanding_Scan1" src="https://github.com/user-attachments/assets/0c8935e3-c8c3-449b-ab9f-3feac8c83f7d" />
+<img width="600" height="369" alt="DepthStanding_Scan2" src="https://github.com/user-attachments/assets/123a4af8-f07f-4e71-8823-01f934d0bf32" />
 
-<img width="600" height="369" alt="DepthStanding_Scan2" src="https://github.com/user-attachments/assets/962b5c49-3a24-4b3c-a802-55cde49aa409" />
 
 从图里面我们可以看到非常明显的物体描边的效果实现
 同时他的描边效果也不是像二次元一样的轮廓线描边，也不是乱描边
@@ -32,17 +32,27 @@ https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 再仔细看其实跑的最快的那条线后面还跟着部分压重的效果
 
 
-所以这就产生了四个效果实现
+所以这就产生了四个效果
 第一是扫描效果，然后会产生从近处到远处的一个效果推进  也就是头部扫描线 ——刷的一下就过去了
 第二是描边的处理，需要设定好合适的生命周期以及与扫描效果搭配好   这个是描边效果
 第三是地面重复线条的效果 需要设定好合适的宽度和间距    这个是平行扫描线的效果 同时这个描边效果肯定是不能到单独跑出来 需要和头部扫描线做一个遮罩 扫描完毕后才会跑出来
 第四就是一个压暗的效果 这个比较好实现   跟着头部扫描线来就行
-
 其实还有一个补充就是脚底下一般不会产生扫描线，所以还需要距离函数 和smoothstep 函数来对 脚底下的线条规模进行一个模糊与消除的处理
+
+这是扫描线的实现
+
+下面是标志的实现
+考虑使用大量相同材质进行绘制
+可以使用GPU instanding 来进行操作 节省性能
+
+
+
 
 
 这个图帅
-<img width="300" height="168" alt="DepthStanding_Scan4" src="https://github.com/user-attachments/assets/729e663b-4986-4b1f-a3ed-a12db6a73d5d" />
+
+<img width="300" height="168" alt="DepthStanding_Scan4" src="https://github.com/user-attachments/assets/588fc4cf-a652-43ba-a4d6-14f437250728" />
+
 
 
 同时平面会有蓝色的小点点，斜坡上点位还会有红色的小叉叉
@@ -50,7 +60,8 @@ https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 以及黄色的点点 这些是死亡搁浅内部一些标识信号  
 考虑在后处理阶段将他们设为不同的层级 不同的层级扫完后就不同的图案显示在表面
 
-<img width="289" height="174" alt="Scan3" src="https://github.com/user-attachments/assets/1263fa0d-ae3f-4093-9f56-72bfe23184d1" />
+<img width="289" height="174" alt="Scan3" src="https://github.com/user-attachments/assets/0cd3a446-bdb2-4b09-a39a-755b15cd91eb" />
+
 
 
 
